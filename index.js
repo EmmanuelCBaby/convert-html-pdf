@@ -1,19 +1,13 @@
 const makeHTML = require('./dataHTML')
-const makePDF = require('./htmlPdf')
 const sendMail = require('./sendEmail')
-let fs = require('fs');
-const util = require('util');
-
+const wkhtmltopdf = require('wkhtmltopdf');
 const path = require('path');
-let pdfName = 'Receipt.pdf';
+
 let htmlTemplate = path.resolve(__dirname, './paymentPrintTemplate.html');
-let htmlFile = path.resolve(__dirname, './paymentPrint.html');
-let pdfFile = path.resolve(__dirname, `./${pdfName}`)
 let cypressLogo = path.resolve(__dirname, "./cl-logo.png")
 let visaLogo = path.resolve(__dirname, "./visa.png")
-let options = { pageSize: 'A4', output: pdfName  };
-
-const unlink = util.promisify(fs.unlink);
+let options = { pageSize: 'A4' };
+let pdfName = 'Receipt.pdf';
 
 (async () => {
     try {
@@ -36,14 +30,11 @@ const unlink = util.promisify(fs.unlink);
 
         //TODO: Purchasers can be an array
         //TODO: Decedents can be an array
-        //TODO: Try to make a stream rather than a HTML file
-        //TODO: Try to make a stram rather than a PDF file
 
-        await makeHTML(htmlTemplate, data)
-        await makePDF(htmlFile, options, `./${pdfName}`)
-        await sendMail('emmanuel.b@westagilelabs.com', 'test email', 'Test', pdfFile)
-        // await unlink(pdfFile)
+        let renderedHtml = await makeHTML(htmlTemplate, data)
+        let pdfStream = wkhtmltopdf(renderedHtml, options)
+        sendMail('emmanuel.b@westagilelabs.com', 'Payment Receipt', 'Receipt', pdfStream, pdfName)
     } catch (error) {
-        console.log()
+        console.error(error)
     }
 })()
